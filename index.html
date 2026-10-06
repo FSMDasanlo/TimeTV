@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TimeTV - Quién domina la TV</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <h1>TimeTV</h1>
+    <p id="estado">Nadie tiene el mando</p>
+  </header>
+
+  <main>
+    <section id="cajas" class="cajas"></section>
+    <button id="btnParar" class="parar" hidden>Terminar (soltar el mando)</button>
+
+    <section class="panel">
+      <h2>Consultas</h2>
+      <div class="filtros">
+        <label>Desde <input type="date" id="desde"></label>
+        <label>Hasta <input type="date" id="hasta"></label>
+        <label>Persona
+          <select id="persona"><option value="">Todas</option></select>
+        </label>
+        <button id="btnHoy" type="button">Hoy</button>
+        <button id="btnSemana" type="button">Últimos 7 días</button>
+        <button id="btnMes" type="button">Este mes</button>
+        <button id="btnTodo" type="button">Todo</button>
+      </div>
+
+      <h3>Ranking</h3>
+      <div id="ranking"></div>
+
+      <h3>Historial <button id="btnCsv" type="button">Exportar CSV</button></h3>
+      <table>
+        <thead><tr><th>Persona</th><th>Inicio</th><th>Fin</th><th>Duración</th><th></th></tr></thead>
+        <tbody id="historial"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
