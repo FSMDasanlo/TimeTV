@@ -1,3 +1,5 @@
+import { MIEMBROS, Storage } from './storage.js';
+
 const $ = id => document.getElementById(id);
 
 function fmt(ms) {
@@ -7,6 +9,18 @@ function fmt(ms) {
   const sec = String(s % 60).padStart(2, '0');
   return `${h}:${m}:${sec}`;
 }
+const COLORES = { papa: '#3b82f6', mama: '#ec4899', dani: '#f59e0b', sandra: '#a855f7', lorena: '#3ddc84' };
+const avisados = new Set();
+
+function tiempoHoy(id) {
+  const ini = new Date().setHours(0, 0, 0, 0);
+  const a = Storage.activa();
+  const lista = Storage.sesiones();
+  if (a) lista.push({ miembro: a.miembro, inicio: a.inicio, fin: Date.now() });
+  return lista.filter(s => s.miembro === id)
+    .reduce((t, s) => t + Math.max(0, s.fin - Math.max(s.inicio, ini)), 0);
+}
+
 const fmtFecha = t => new Date(t).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 const nombreDe = id => (MIEMBROS.find(m => m.id === id) || {}).nombre || id;
 const aISO = d => {
@@ -31,9 +45,17 @@ function consultar() {
 function crearCajas() {
   $('cajas').innerHTML = MIEMBROS.map(m => `
     <button class="caja" data-id="${m.id}" style="background-image:url('img/${m.id}.jpg')">
-      <span class="info"><b>${m.nombre}</b><span class="total">00:00:00</span></span>
+      <span class="info"><b>${m.nombre}</b><span class="total">00:00:00</span><span class="hoy"></span></span>
     </button>`).join('');
   $('persona').innerHTML += MIEMBROS.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+  $('leyenda').innerHTML = MIEMBROS.map(m => `<span><b style="background:${COLORES[m.id]}"></b>${m.nombre}</span>`).join('');
+  $('limites').innerHTML = MIEMBROS.map(m =>
+    `<label>${m.nombre}<input type="number" min="0" step="5" data-id="${m.id}" value="0"></label>`).join('');
+  $('limites').addEventListener('change', e => {
+    const v = Math.max(0, parseInt(e.target.value, 10) || 0);
+    avisados.delete(e.target.dataset.id);
+    Storage.guardarLimite(e.target.dataset.id, v);
+  });
   $('cajas').addEventListener('click', e => {
     const caja = e.target.closest('.caja');
     if (!caja) return;
@@ -54,6 +76,19 @@ function pintarCajas() {
     const activa = a && a.miembro === id;
     c.classList.toggle('activa', !!activa);
     c.querySelector('.total').textContent = fmt((tot[id] || 0) + (activa ? Date.now() - a.inicio : 0));
+
+    const hoy = tiempoHoy(id);
+    const lim = (Storage.limites()[id] || 0) * 60000;
+    const excedido = lim > 0 && hoy >= lim;
+    c.classList.toggle('excedido', excedido);
+    c.querySelector('.hoy').textContent = `Hoy ${fmt(hoy)}` + (lim ? ` / ${fmt(lim)}` : '');
+    if (excedido && activa && !avisados.has(id)) {
+      avisados.add(id);
+      setTimeout(() => alert(`${nombreDe(id)} ha agotado su límite diario de TV.`), 50);
+    }
+  });
+  document.querySelectorAll('#limites input').forEach(i => {
+    if (document.activeElement !== i) i.value = Storage.limites()[i.dataset.id] || 0;
   });
   $('btnParar').hidden = !a;
   $('estado').textContent = a ? `${nombreDe(a.miembro)} tiene el mando: ${fmt(Date.now() - a.inicio)}` : 'Nadie tiene el mando';
@@ -72,6 +107,20 @@ function pintarConsulta() {
       <span class="barra"><i style="width:${(r.t / max) * 100}%"></i></span>
       <span class="tt">${fmt(r.t)} (${suma ? Math.round(r.t / suma * 100) : 0}%)</span>
     </div>`).join('');
+  const dias = {};
+  datos.forEach(s => {
+    const k = aISO(new Date(s.inicio));
+    (dias[k] = dias[k] || {})[s.miembro] = ((dias[k] || {})[s.miembro] || 0) + s.dur;
+  });
+  const claves = Object.keys(dias).sort().slice(-31);
+  const totDia = k => Object.values(dias[k]).reduce((x, y) => x + y, 0);
+  const maxDia = Math.max(1, ...claves.map(totDia));
+  $('grafica').innerHTML = claves.map(k => `
+    <div class="dia" title="${k}: ${fmt(totDia(k))}">
+      <div class="pila">${MIEMBROS.filter(m => dias[k][m.id]).map(m =>
+        `<i style="height:${dias[k][m.id] / maxDia * 100}%;background:${COLORES[m.id]}" title="${m.nombre}: ${fmt(dias[k][m.id])}"></i>`).join('')}</div>
+      ${k.slice(8)}/${k.slice(5, 7)}
+    </div>`).join('') || 'Sin datos';
   $('historial').innerHTML = datos.map(s => `
     <tr><td>${nombreDe(s.miembro)}</td><td>${fmtFecha(s.inicio)}</td>
     <td>${s.id === null ? 'en curso' : fmtFecha(s.fin)}</td><td>${fmt(s.dur)}</td>
@@ -112,5 +161,6 @@ $('historial').addEventListener('click', e => {
   if (b && confirm('¿Borrar este registro?')) { Storage.borrar(Number(b.dataset.id)); refrescar(); }
 });
 
+Storage.alCambiar(refrescar);
 refrescar();
 setInterval(refrescar, 1000);

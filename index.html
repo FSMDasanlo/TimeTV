@@ -33,6 +33,13 @@
       <h3>Ranking</h3>
       <div id="ranking"></div>
 
+      <h3>Por días</h3>
+      <div id="grafica" class="grafica"></div>
+      <div id="leyenda" class="leyenda"></div>
+
+      <h3>Límite diario (minutos, 0 = sin límite)</h3>
+      <div id="limites" class="filtros"></div>
+
       <h3>Historial <button id="btnCsv" type="button">Exportar CSV</button></h3>
       <table>
         <thead><tr><th>Persona</th><th>Inicio</th><th>Fin</th><th>Duración</th><th></th></tr></thead>
@@ -41,7 +48,6 @@
     </section>
   </main>
 
-  <script src="js/storage.js"></script>
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

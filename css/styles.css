@@ -35,6 +35,17 @@ input, select { padding: .35rem; border-radius: 6px; border: 1px solid #444; bac
 .barra i { display: block; height: 100%; background: #3ddc84; }
 .tt { text-align: right; font-variant-numeric: tabular-nums; }
 
+.caja .hoy { font-size: .8rem; opacity: .9; }
+.caja.excedido { border-color: #e5484d; box-shadow: 0 0 20px #e5484d; }
+.caja.excedido .hoy { color: #ff8a8e; font-weight: 700; }
+
+.grafica { display: flex; align-items: flex-end; gap: 4px; height: 180px; padding-top: .5rem; overflow-x: auto; }
+.dia { flex: 1 0 28px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; font-size: .7rem; }
+.dia .pila { width: 100%; flex: 1; display: flex; flex-direction: column-reverse; }
+.dia .pila i { display: block; width: 100%; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: .5rem; font-size: .85rem; }
+.leyenda b { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .3rem; }
+
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th, td { padding: .4rem; text-align: left; border-bottom: 1px solid #333; }
 .del { background: none; border: 0; color: #e5484d; cursor: pointer; }

@@ -1,4 +1,9 @@
-const MIEMBROS = [
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import {
+  getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+export const MIEMBROS = [
   { id: 'papa', nombre: 'Papá' },
   { id: 'mama', nombre: 'Mamá' },
   { id: 'dani', nombre: 'Dani' },
@@ -6,36 +11,78 @@ const MIEMBROS = [
   { id: 'lorena', nombre: 'Lorena' }
 ];
 
-const Storage = {
-  KEY_SESIONES: 'timetv.sesiones',
-  KEY_ACTIVA: 'timetv.activa',
+const firebaseConfig = {
+  apiKey: 'AIzaSyBiHScfiaUps3AgigsCX6LVSm8nkvLivoI',
+  authDomain: 'timetv-control-de-tiempo-tv.firebaseapp.com',
+  projectId: 'timetv-control-de-tiempo-tv',
+  storageBucket: 'timetv-control-de-tiempo-tv.firebasestorage.app',
+  messagingSenderId: '1008888073153',
+  appId: '1:1008888073153:web:672fc3a87204c592a03d40'
+};
 
-  sesiones() {
-    return JSON.parse(localStorage.getItem(this.KEY_SESIONES) || '[]');
+const db = getFirestore(initializeApp(firebaseConfig));
+const colSesiones = collection(db, 'sesiones');
+const docActiva = doc(db, 'estado', 'activa');
+
+// Caché local alimentada por Firestore en tiempo real
+let sesiones = [];
+let activa = null;
+let limites = {};
+const oyentes = [];
+const avisar = () => oyentes.forEach(f => f());
+
+onSnapshot(colSesiones, snap => {
+  sesiones = snap.docs.map(d => ({ id: Number(d.id), ...d.data() }));
+  avisar();
+});
+onSnapshot(docActiva, snap => {
+  activa = snap.exists() ? snap.data() : null;
+  avisar();
+});
+
+onSnapshot(doc(db, 'estado', 'limites'), snap => {
+  limites = snap.exists() ? snap.data() : {};
+  avisar();
+});
+
+// Migra una sola vez los datos antiguos de localStorage
+(async function migrar() {
+  const viejas = JSON.parse(localStorage.getItem('timetv.sesiones') || '[]');
+  if (!viejas.length) return;
+  const batch = writeBatch(db);
+  viejas.forEach(s => batch.set(doc(colSesiones, String(s.id)),
+    { miembro: s.miembro, inicio: s.inicio, fin: s.fin }));
+  await batch.commit();
+  localStorage.removeItem('timetv.sesiones');
+  localStorage.removeItem('timetv.activa');
+})();
+
+export const Storage = {
+  alCambiar(f) { oyentes.push(f); },
+  sesiones() { return sesiones.slice(); },
+  activa() { return activa; },
+  // Minutos diarios por persona; 0 o ausente = sin límite
+  limites() { return { ...limites }; },
+  guardarLimite(id, minutos) {
+    return setDoc(doc(db, 'estado', 'limites'), { [id]: minutos }, { merge: true });
   },
-  guardarSesiones(lista) {
-    localStorage.setItem(this.KEY_SESIONES, JSON.stringify(lista));
-  },
-  // Sesión en curso: { miembro, inicio } o null
-  activa() {
-    return JSON.parse(localStorage.getItem(this.KEY_ACTIVA) || 'null');
-  },
-  iniciar(miembro) {
-    this.parar();
-    localStorage.setItem(this.KEY_ACTIVA, JSON.stringify({ miembro, inicio: Date.now() }));
-  },
-  parar() {
-    const a = this.activa();
+
+  async parar() {
+    const a = activa;
     if (!a) return;
     const fin = Date.now();
+    const batch = writeBatch(db);
     if (fin - a.inicio >= 1000) {
-      const lista = this.sesiones();
-      lista.push({ id: fin, miembro: a.miembro, inicio: a.inicio, fin });
-      this.guardarSesiones(lista);
+      batch.set(doc(colSesiones, String(fin)), { miembro: a.miembro, inicio: a.inicio, fin });
     }
-    localStorage.removeItem(this.KEY_ACTIVA);
+    batch.delete(docActiva);
+    await batch.commit();
+  },
+  async iniciar(miembro) {
+    await this.parar();
+    await setDoc(docActiva, { miembro, inicio: Date.now() });
   },
   borrar(id) {
-    this.guardarSesiones(this.sesiones().filter(s => s.id !== id));
+    return deleteDoc(doc(colSesiones, String(id)));
   }
 };
