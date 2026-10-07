@@ -156,6 +156,12 @@ $('btnSemana').onclick = () => rango(new Date(Date.now() - 6 * 864e5), new Date(
 $('btnMes').onclick = () => { const h = new Date(); rango(new Date(h.getFullYear(), h.getMonth(), 1), h); };
 $('btnTodo').onclick = () => rango(null, null);
 $('btnCsv').onclick = exportarCsv;
+$('btnHistorial').onclick = () => {
+  const contenido = $('historialContenido');
+  contenido.hidden = !contenido.hidden;
+  $('btnHistorial').textContent = contenido.hidden ? 'Mostrar historial' : 'Ocultar historial';
+  $('btnHistorial').setAttribute('aria-expanded', String(!contenido.hidden));
+};
 $('historial').addEventListener('click', e => {
   const b = e.target.closest('.del');
   if (b && confirm('¿Borrar este registro?')) { Storage.borrar(Number(b.dataset.id)); refrescar(); }

@@ -40,11 +40,14 @@
       <h3>Límite diario (minutos, 0 = sin límite)</h3>
       <div id="limites" class="filtros"></div>
 
-      <h3>Historial <button id="btnCsv" type="button">Exportar CSV</button></h3>
-      <table>
-        <thead><tr><th>Persona</th><th>Inicio</th><th>Fin</th><th>Duración</th><th></th></tr></thead>
-        <tbody id="historial"></tbody>
-      </table>
+      <button id="btnHistorial" type="button" aria-expanded="false" aria-controls="historialContenido">Mostrar historial</button>
+      <div id="historialContenido" hidden>
+        <h3>Historial <button id="btnCsv" type="button">Exportar CSV</button></h3>
+        <table>
+          <thead><tr><th>Persona</th><th>Inicio</th><th>Fin</th><th>Duración</th><th></th></tr></thead>
+          <tbody id="historial"></tbody>
+        </table>
+      </div>
     </section>
   </main>
 
